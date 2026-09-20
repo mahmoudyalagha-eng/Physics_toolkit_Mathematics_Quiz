@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A Physics Toolkit Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,440;0,9..144,600;1,9..144,500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F6F3EC;
+    --panel: #FFFFFF;
+    --panel-border: #E5E0D2;
+    --text: #201E27;
+    --text-secondary: #6E6A5C;
+    --accent: #C97A1A;
+    --accent-soft: #F1DEC0;
+    --correct: #2E8B57;
+    --correct-soft: #DCEEE1;
+    --incorrect: #C1443B;
+    --incorrect-soft: #F5DEDA;
+    --bar-empty: #E5E0D2;
+    --focus-ring: #6E6A5C;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12141C;
+      --panel: #1C2030;
+      --panel-border: #2C3044;
+      --text: #ECEDF2;
+      --text-secondary: #9AA0B4;
+      --accent: #F0AC3F;
+      --accent-soft: #3A2E17;
+      --correct: #6FCF97;
+      --correct-soft: #1E3327;
+      --incorrect: #FF8177;
+      --incorrect-soft: #3A2020;
+      --bar-empty: #2C3044;
+      --focus-ring: #F0AC3F;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #12141C;
+    --panel: #1C2030;
+    --panel-border: #2C3044;
+    --text: #ECEDF2;
+    --text-secondary: #9AA0B4;
+    --accent: #F0AC3F;
+    --accent-soft: #3A2E17;
+    --correct: #6FCF97;
+    --correct-soft: #1E3327;
+    --incorrect: #FF8177;
+    --incorrect-soft: #3A2020;
+    --bar-empty: #2C3044;
+    --focus-ring: #F0AC3F;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100%;
+  }
+
+  body {
+    font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 32px 16px 64px;
+    line-height: 1.5;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 560px;
+  }
+
+  header.hero {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 28px;
+  }
+
+  .method-loop {
+    flex: none;
+    width: 64px;
+    height: 64px;
+  }
+
+  .loop-arrow {
+    transform-origin: 32px 32px;
+    animation: spin 3.6s linear infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .loop-arrow { animation: none; }
+  }
+
+  h1 {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 600;
+    font-style: italic;
+    font-size: 1.55rem;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+
+  .subtitle {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+    max-width: 34ch;
+  }
+
+  .bars {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 6px;
+    margin-bottom: 26px;
+  }
+
+  .bar {
+    height: 26px;
+    border-radius: 4px;
+    background: var(--bar-empty);
+    border: none;
+    padding: 0;
+    cursor: default;
+    transition: background 0.25s ease, transform 0.15s ease;
+  }
+
+  .bar.visited { cursor: pointer; }
+  .bar.visited:hover { transform: scaleY(1.12); }
+  .bar.current { background: var(--accent); }
+  .bar.correct { background: var(--correct); }
+  .bar.incorrect { background: var(--incorrect); }
+  .bar:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 28px 26px 24px;
+  }
+
+  .q-count {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin: 0 0 10px;
+  }
+
+  .prompt {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin: 0 0 18px;
+    line-height: 1.45;
+  }
+
+  .hint-toggle {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0 0 16px;
+    cursor: pointer;
+    display: block;
+  }
+
+  .hint-toggle:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
+
+  .hint-text {
+    display: none;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    background: var(--accent-soft);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin: -8px 0 16px;
+  }
+
+  .hint-text.shown { display: block; }
+
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+
+  .option {
+    text-align: left;
+    font-family: inherit;
+    font-size: 0.96rem;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--panel-border);
+    border-left: 4px solid var(--panel-border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+
+  .option:hover:not(:disabled) {
+    border-left-color: var(--accent);
+  }
+
+  .option:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  .option:disabled { cursor: default; }
+
+  .option.chosen-correct {
+    border-left-color: var(--correct);
+    background: var(--correct-soft);
+  }
+
+  .option.chosen-incorrect {
+    border-left-color: var(--incorrect);
+    background: var(--incorrect-soft);
+  }
+
+  .option.reveal-correct {
+    border-left-color: var(--correct);
+  }
+
+  .feedback {
+    margin-top: 16px;
+    padding: 14px 16px;
+    border-radius: 8px;
+    font-size: 0.92rem;
+    display: none;
+  }
+
+  .feedback.shown { display: block; }
+  .feedback.is-correct { background: var(--correct-soft); }
+  .feedback.is-incorrect { background: var(--incorrect-soft); }
+
+  .feedback strong { display: block; margin-bottom: 4px; }
+  .feedback.is-correct strong { color: var(--correct); }
+  .feedback.is-incorrect strong { color: var(--incorrect); }
+
+  .nav-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 22px;
+  }
+
+  .btn {
+    font-family: inherit;
+    font-size: 0.92rem;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 1px solid var(--panel-border);
+    background: transparent;
+    color: var(--text);
+  }
+
+  .btn:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+  .btn:disabled { opacity: 0.4; cursor: default; }
+
+  .btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #241804;
+  }
+
+  .results {
+    text-align: center;
+  }
+
+  .score-big {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 3.2rem;
+    font-weight: 600;
+    margin: 6px 0 4px;
+  }
+
+  .score-label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin: 0 0 20px;
+  }
+
+  .score-msg {
+    font-size: 1rem;
+    margin: 0 0 24px;
+  }
+
+  .retake {
+    margin: 0 auto;
+    display: inline-block;
+  }
+
+  footer {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    margin-top: 28px;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="hero">
+    <svg class="method-loop" viewBox="0 0 64 64" aria-hidden="true">
+      <g class="loop-arrow">
+        <path d="M32 8 A24 24 0 1 1 9.6 24.8" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round"/>
+        <polygon points="9.6,24.8 18.5,21.6 15,31.4" fill="var(--accent)"/>
+      </g>
+    </svg>
+    <div>
+      <h1>A Physics Toolkit</h1>
+      <p class="subtitle">10 questions on scientific methods, SI units, sig figs &amp; dimensional analysis.</p>
+    </div>
+  </header>
+
+  <div class="bars" id="bars" role="tablist" aria-label="Question progress"></div>
+
+  <main class="card" id="card"></main>
+
+  <footer>Based on Module 1, Lessons 1–2 — Methods of Science &amp; Mathematics and Physics</footer>
+</div>
+
+<script>
+(function () {
+  var QUESTIONS = [
+    {
+      id: "q1",
+      prompt: "What is a hypothesis in science?",
+      options: [
+        { id: "a", text: "A possible explanation for a problem that can be tested through experimentation or observation" },
+        { id: "b", text: "A conclusion that has already been proven true" },
+        { id: "c", text: "A random guess that never needs to be tested" },
+        { id: "d", text: "A law that describes what always happens in nature" }
+      ],
+      correct: "a",
+      explanation: "A hypothesis is a testable possible explanation based on existing knowledge and observations — it must be checked by experiment or observation, unlike an untestable guess or an already-proven law.",
+      correctFeedback: "That's the right definition.",
+      incorrectFeedback: "Remember: a hypothesis must be testable."
+    },
+    {
+      id: "q2",
+      prompt: "Why do scientists often use models instead of observing the real thing directly?",
+      options: [
+        { id: "a", text: "Because the actual object, event, or process may be too large, too small, too slow, too fast, or too hazardous to observe or manipulate directly" },
+        { id: "b", text: "Because models are always more accurate than direct observation" },
+        { id: "c", text: "Because models eliminate the need for any experimentation" },
+        { id: "d", text: "Because peer review requires the use of a model" }
+      ],
+      correct: "a",
+      explanation: "Models are representations that help people understand something they can't directly see or work with — like atoms too small to observe, or processes too dangerous or slow to study firsthand.",
+      correctFeedback: "Exactly right.",
+      incorrectFeedback: "Think about what kinds of things are hard to observe directly."
+    },
+    {
+      id: "q3",
+      prompt: "What is the key difference between a scientific law and a scientific theory?",
+      options: [
+        { id: "a", text: "A law describes what happens under certain conditions without explaining why, while a theory provides an explanation based on extensive evidence" },
+        { id: "b", text: "A theory is just an untested guess, while a law has been proven with a single experiment" },
+        { id: "c", text: "A law can eventually become a theory once enough evidence supports it" },
+        { id: "d", text: "There is no real difference — the terms are interchangeable" }
+      ],
+      correct: "a",
+      explanation: "Laws describe patterns in nature (like the law of gravity) but don't explain the underlying cause. Theories, like the theory explaining why objects fall, provide explanations built from many observations — and theories do not turn into laws no matter how much evidence supports them.",
+      correctFeedback: "That's correct.",
+      incorrectFeedback: "Think about which one explains 'why' and which one just describes 'what'."
+    },
+    {
+      id: "q4",
+      prompt: "A cyclist travels 27 km in 1.5 h. What is the average speed?",
+      hint: "speed = distance / time",
+      options: [
+        { id: "a", text: "18 km/h" },
+        { id: "b", text: "40.5 km/h" },
+        { id: "c", text: "1.8 km/h" },
+        { id: "d", text: "0.056 km/h" }
+      ],
+      correct: "a",
+      explanation: "speed = distance/time = 27 km / 1.5 h = 18 km/h. Multiplying instead of dividing gives 40.5 km/h, and inverting the division gives a much smaller, incorrect value.",
+      correctFeedback: "Nicely calculated!",
+      incorrectFeedback: "Check that you divided distance by time, not the other way around."
+    },
+    {
+      id: "q5",
+      prompt: "You measure two lengths, 5.36 m and 2.1 m, and add them together. Following the significant figure rule for addition, how should the sum be reported?",
+      hint: "The result can only be as precise as the least precise measurement.",
+      options: [
+        { id: "a", text: "7.5 m" },
+        { id: "b", text: "7.46 m" },
+        { id: "c", text: "7.4 m" },
+        { id: "d", text: "7 m" }
+      ],
+      correct: "a",
+      explanation: "5.36 + 2.1 = 7.46, but since 2.1 m is only precise to the tenths place, the sum must be rounded to the tenths place too: 7.5 m. Reporting 7.46 m falsely implies more precision than the measurements support.",
+      correctFeedback: "That's the correctly rounded sum.",
+      incorrectFeedback: "Look at how many decimal places the least precise measurement has."
+    },
+    {
+      id: "q6",
+      prompt: "What is peer review, and why does it matter?",
+      options: [
+        { id: "a", text: "It's the process where other scientists in the same field evaluate an experiment's procedures and results before they're made public, helping catch errors and bias" },
+        { id: "b", text: "It's a step where a scientist reviews their own data twice for accuracy" },
+        { id: "c", text: "It's a public survey used to gather opinions about a scientific claim" },
+        { id: "d", text: "It's the final step of the scientific method, performed after conclusions are drawn and published" }
+      ],
+      correct: "a",
+      explanation: "Peer review means other scientists in the same field examine the procedures and results of an experiment before it's accepted or published, which helps catch errors and reduce bias in scientific work.",
+      correctFeedback: "Exactly — outside evaluation before publication.",
+      incorrectFeedback: "Peer review specifically involves other scientists, not just the original researcher."
+    },
+    {
+      id: "q7",
+      prompt: "A rectangular plate measures 12.5 cm by 3.2 cm. Following the significant figure rule for multiplication, what is its area?",
+      hint: "The result should have the same number of significant figures as the least precise measurement.",
+      options: [
+        { id: "a", text: "4.0×10¹ cm²" },
+        { id: "b", text: "40.00 cm²" },
+        { id: "c", text: "4.00×10¹ cm²" },
+        { id: "d", text: "4×10¹ cm²" }
+      ],
+      correct: "a",
+      explanation: "12.5 cm × 3.2 cm = 40.00 cm², but since 3.2 cm has only 2 significant figures, the answer must be rounded to 2 significant figures: 4.0×10¹ cm². Scientific notation makes the correct count of significant figures unambiguous.",
+      correctFeedback: "Exactly the right precision.",
+      incorrectFeedback: "Count the significant figures in each measurement, and match the smaller count."
+    },
+    {
+      id: "q8",
+      prompt: "Convert 90 km/h to meters per second.",
+      hint: "Multiply by (1000 m / 1 km) and (1 h / 3600 s).",
+      options: [
+        { id: "a", text: "25 m/s" },
+        { id: "b", text: "324 m/s" },
+        { id: "c", text: "0.025 m/s" },
+        { id: "d", text: "2.5 m/s" }
+      ],
+      correct: "a",
+      explanation: "90 km/h × (1000 m/1 km) × (1 h/3600 s) = 90,000/3600 = 25 m/s. Multiplying by 3.6 instead of dividing by it gives the much larger, incorrect value of 324 m/s.",
+      correctFeedback: "That's the correct conversion.",
+      incorrectFeedback: "Make sure your conversion factors are set up so the units actually cancel."
+    },
+    {
+      id: "q9",
+      prompt: "Using the SI prefix table, how many nanometers are in 1 meter?",
+      hint: "nano- = 10⁻⁹, so a nanometer is a much smaller unit than a meter.",
+      options: [
+        { id: "a", text: "1×10⁹ nm" },
+        { id: "b", text: "1×10⁻⁹ nm" },
+        { id: "c", text: "1×10⁶ nm" },
+        { id: "d", text: "1×10³ nm" }
+      ],
+      correct: "a",
+      explanation: "Since 1 nm = 10⁻⁹ m, it takes 10⁹ nanometers to make up 1 meter. Mixing up the prefix (like micro's 10⁻⁶ or kilo's 10³) or flipping the sign of the exponent gives the wrong answer.",
+      correctFeedback: "That's right.",
+      incorrectFeedback: "Check which prefix you're thinking of, and whether the exponent should be positive or negative here."
+    },
+    {
+      id: "q10",
+      prompt: "In the measurement 0.0860 m, which digits are NOT significant?",
+      options: [
+        { id: "a", text: "The first two zeros, since they only locate the decimal point" },
+        { id: "b", text: "The 8 and the 6, since they are nonzero digits" },
+        { id: "c", text: "The final zero, since it is the estimated digit" },
+        { id: "d", text: "None of the digits — all zeros in a measurement are always significant" }
+      ],
+      correct: "a",
+      explanation: "Leading zeros that only serve to locate the decimal point are not significant. In 0.0860 m, the first two zeros are not significant, but the 8, 6, and the trailing zero are all significant (the trailing zero is the estimated digit).",
+      correctFeedback: "That's correct.",
+      incorrectFeedback: "Think about which zeros are just placeholders versus which ones were actually measured."
+    }
+  ];
+
+  function shuffleArray(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+    }
+    return a;
+  }
+
+  var state = {
+    idx: 0,
+    answers: new Array(QUESTIONS.length).fill(null),
+    visited: new Array(QUESTIONS.length).fill(false),
+    optionOrder: new Array(QUESTIONS.length).fill(null),
+    finished: false
+  };
+
+  var barsEl = document.getElementById('bars');
+  var cardEl = document.getElementById('card');
+
+  function score() {
+    var s = 0;
+    for (var i = 0; i < QUESTIONS.length; i++) {
+      if (state.answers[i] === QUESTIONS[i].correct) s++;
+    }
+    return s;
+  }
+
+  function renderBars() {
+    barsEl.innerHTML = '';
+    QUESTIONS.forEach(function (q, i) {
+      var b = document.createElement('button');
+      b.className = 'bar';
+      b.setAttribute('aria-label', 'Question ' + (i + 1));
+      var answer = state.answers[i];
+      if (answer !== null) {
+        b.classList.add(answer === q.correct ? 'correct' : 'incorrect');
+      } else if (i === state.idx && !state.finished) {
+        b.classList.add('current');
+      }
+      if (state.visited[i]) {
+        b.classList.add('visited');
+        b.addEventListener('click', function () {
+          state.finished = false;
+          state.idx = i;
+          render();
+        });
+      } else {
+        b.disabled = true;
+      }
+      barsEl.appendChild(b);
+    });
+  }
+
+  function renderQuestion() {
+    var i = state.idx;
+    var q = QUESTIONS[i];
+    state.visited[i] = true;
+    var answered = state.answers[i];
+
+    if (!state.optionOrder[i]) {
+      state.optionOrder[i] = shuffleArray(q.options);
+    }
+    var displayOptions = state.optionOrder[i];
+
+    var html = '';
+    html += '<p class="q-count">Question ' + (i + 1) + ' of ' + QUESTIONS.length + '</p>';
+    html += '<p class="prompt">' + q.prompt + '</p>';
+
+    if (q.hint) {
+      html += '<button class="hint-toggle" id="hintBtn" type="button">Need a hint?</button>';
+      html += '<div class="hint-text" id="hintText">' + q.hint + '</div>';
+    }
+
+    html += '<div class="options" id="optionsWrap">';
+    displayOptions.forEach(function (opt) {
+      var cls = 'option';
+      if (answered) {
+        if (opt.id === q.correct) cls += ' reveal-correct';
+        if (opt.id === answered && answered !== q.correct) cls += ' chosen-incorrect';
+        if (opt.id === answered && answered === q.correct) cls += ' chosen-correct';
+      }
+      html += '<button class="' + cls + '" data-opt="' + opt.id + '" ' + (answered ? 'disabled' : '') + '>' + opt.text + '</button>';
+    });
+    html += '</div>';
+
+    var fbClass = 'feedback';
+    var fbContent = '';
+    if (answered) {
+      var isCorrect = answered === q.correct;
+      fbClass += isCorrect ? ' is-correct shown' : ' is-incorrect shown';
+      fbContent = '<strong>' + (isCorrect ? q.correctFeedback : q.incorrectFeedback) + '</strong>' + q.explanation;
+    }
+    html += '<div class="' + fbClass + '" id="feedback">' + fbContent + '</div>';
+
+    html += '<div class="nav-row">';
+    html += '<button class="btn" id="backBtn" ' + (i === 0 ? 'disabled' : '') + '>Back</button>';
+    var isLast = i === QUESTIONS.length - 1;
+    html += '<button class="btn primary" id="nextBtn" ' + (answered ? '' : 'disabled') + '>' + (isLast ? 'See results' : 'Next') + '</button>';
+    html += '</div>';
+
+    cardEl.innerHTML = html;
+
+    if (q.hint) {
+      document.getElementById('hintBtn').addEventListener('click', function () {
+        document.getElementById('hintText').classList.toggle('shown');
+      });
+    }
+
+    document.querySelectorAll('#optionsWrap .option').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (state.answers[i] !== null) return;
+        state.answers[i] = btn.getAttribute('data-opt');
+        render();
+      });
+    });
+
+    document.getElementById('backBtn').addEventListener('click', function () {
+      state.idx = Math.max(0, i - 1);
+      render();
+    });
+
+    document.getElementById('nextBtn').addEventListener('click', function () {
+      if (isLast) {
+        state.finished = true;
+        render();
+      } else {
+        state.idx = i + 1;
+        render();
+      }
+    });
+  }
+
+  function renderResults() {
+    var s = score();
+    var total = QUESTIONS.length;
+    var msg;
+    if (s === total) {
+      msg = "Perfect score — scientific methods and the math toolkit are both locked in.";
+    } else if (s >= total * 0.7) {
+      msg = "Solid work — review the ones you missed and it'll stick.";
+    } else if (s >= total * 0.4) {
+      msg = "Good start — worth another pass through significant figures and dimensional analysis.";
+    } else {
+      msg = "Worth re-reading both lessons before trying again — the rules for units and sig figs take practice.";
+    }
+
+    var html = '<div class="results">';
+    html += '<p class="score-label">Your score</p>';
+    html += '<p class="score-big">' + s + ' / ' + total + '</p>';
+    html += '<p class="score-msg">' + msg + '</p>';
+    html += '<button class="btn primary retake" id="retakeBtn">Retake quiz</button>';
+    html += '</div>';
+    cardEl.innerHTML = html;
+
+    document.getElementById('retakeBtn').addEventListener('click', function () {
+      state = {
+        idx: 0,
+        answers: new Array(QUESTIONS.length).fill(null),
+        visited: new Array(QUESTIONS.length).fill(false),
+        optionOrder: new Array(QUESTIONS.length).fill(null),
+        finished: false
+      };
+      render();
+    });
+  }
+
+  function render() {
+    renderBars();
+    if (state.finished) {
+      renderResults();
+    } else {
+      renderQuestion();
+    }
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
